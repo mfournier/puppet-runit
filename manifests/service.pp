@@ -50,6 +50,17 @@ define runit::service (
       user => $user, group => $group, enable => false, ensure => $ensure, logger => false,
       content => template('runit/logger_run.erb'),
     }
+
+    if $enable == true {
+      # almost the same trigger than in runit::service::enabled, except this
+      # one gets run when svlogd's run-file gets modified.
+      exec { "sv restart ${name}/log":
+        subscribe   => File["${svbase}/log/run"],
+        command     => "/usr/bin/sv -w ${timeout} force-restart '${svbase}/log'; true",
+        onlyif      => "/usr/bin/test -d '${svbase}/log/supervise'",
+        refreshonly => true,
+      }
+    }
   }
 
   # the main service stuff
